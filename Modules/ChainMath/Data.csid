@@ -1,0 +1,5 @@
+name: Math
+version: 1.0.0
+author: TDF-Git
+description: Mathematical functions for ChainScript
+entry: Math.csi
