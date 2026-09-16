@@ -83,6 +83,8 @@ cat > "$ROOT/Runtime/Program.cs" <<'CSHARP'
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Text.Json;
 
 class Program
 {
@@ -130,6 +132,10 @@ class Program
                 Help();
                 break;
 
+            case "chad":
+                ChadCommand(args);
+                break;
+            
             default:
                 if (args[0].EndsWith(".csx", StringComparison.OrdinalIgnoreCase) ||
                     args[0].EndsWith(".chsx", StringComparison.OrdinalIgnoreCase))
@@ -604,6 +610,90 @@ class Program
         return Directory.GetCurrentDirectory();
     }
 
+    static void ChadCommand(string[] args)
+    {
+        if (args.Length < 2)
+        {
+            Console.WriteLine("Usage: ChainScript Chad <Module>");
+            return;
+        }
+
+        string module = args[1];
+
+        if (module.Contains("/") ||
+            module.Contains("\\") ||
+            module.Contains(".."))
+        {
+            Console.WriteLine("Invalid module name.");
+            return;
+        }
+
+        string root = FindChainScriptRoot();
+
+        string moduleDirectory = Path.Combine(
+            root,
+            "CsxModules",
+            module
+        );
+
+        Directory.CreateDirectory(moduleDirectory);
+
+        string baseUrl =
+            "https://raw.githubusercontent.com/TDF-Git/ChainScript/main/Modules/"
+            + module
+            + "/";
+
+        string csiUrl = baseUrl + "Module.csi";
+        string csidUrl = baseUrl + "Data.csid";
+
+        string csiPath = Path.Combine(
+            moduleDirectory,
+            "Module.csi"
+        );
+
+        string csidPath = Path.Combine(
+            moduleDirectory,
+            "Data.csid"
+        );
+
+        Console.WriteLine($"Installing ChainScript module: {module}");
+        Console.WriteLine();
+
+        try
+        {
+            using HttpClient client = new HttpClient();
+
+            client.Timeout = TimeSpan.FromSeconds(30);
+
+            Console.WriteLine("Downloading Module.csi...");
+            string csi = client.GetStringAsync(csiUrl)
+                .GetAwaiter()
+                .GetResult();
+
+            Console.WriteLine("Downloading Data.csid...");
+            string csid = client.GetStringAsync(csidUrl)
+                .GetAwaiter()
+                .GetResult();
+
+            File.WriteAllText(csiPath, csi);
+            File.WriteAllText(csidPath, csid);
+
+            Console.WriteLine();
+            Console.WriteLine($"Module '{module}' installed.");
+            Console.WriteLine();
+            Console.WriteLine($"Location: {moduleDirectory}");
+        }
+        catch (Exception ex)
+        {
+            if (Directory.Exists(moduleDirectory))
+                Directory.Delete(moduleDirectory, true);
+
+            Console.WriteLine();
+            Console.WriteLine($"Failed to install module '{module}'.");
+            Console.WriteLine(ex.Message);
+        }
+    }
+
     static void Help()
     {
         Console.WriteLine("ChainScript 0.1.0");
@@ -613,6 +703,7 @@ class Program
         Console.WriteLine("  ChainScript build <file.csx>");
         Console.WriteLine("  ChainScript init <project>");
         Console.WriteLine("  ChainScript Link <file.chl> <code-file>");
+        Console.WriteLine("  ChainScript Chad <Module>");
         Console.WriteLine("  ChainScript Uninstall");
         Console.WriteLine("  ChainScript Uninstall <module>");
         Console.WriteLine("  ChainScript version");
@@ -695,13 +786,14 @@ echo "Version:"
 
 echo
 echo "Commands:"
-echo "  ./bin/ChainScript run main.csx"
-echo "  ./bin/ChainScript build main.csx"
-echo "  ./bin/ChainScript init MyProject"
-echo "  ./bin/ChainScript Link changes.chl test.js"
-echo "  ./bin/ChainScript Uninstall"
-echo
-echo "Add ChainScript to PATH with:"
-echo "  export PATH=\"$ROOT/bin:\$PATH\""
+echo "  ChainScript run <file.csx>"
+echo "  ChainScript build <file.csx>"
+echo "  ChainScript init <project>"
+echo "  ChainScript Link <file.chl> <code-file>"
+echo "  ChainScript Chad <Module>"
+echo "  ChainScript Uninstall"
+echo "  ChainScript Uninstall <module>"
+echo "  ChainScript version"
+echo "  ChainScript help"
 echo
 echo "=========================================="
