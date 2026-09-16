@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+export DOTNET_ROOT="$ROOT/.dotnet"
+export PATH="$DOTNET_ROOT:$ROOT/bin:$PATH"
+export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
+
+exec "$DOTNET_ROOT/dotnet" run \
+    --project "$ROOT/Runtime" \
+    -- "$@"
